@@ -1,0 +1,154 @@
+<!DOCTYPE html><html>
+  <head>
+    <title>AR Wall Projection with Screen Share</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      #shareBtn, #uploadBtn, #playPauseBtn, #muteBtn {
+        position: fixed;
+        top: 10px;
+        padding: 10px;
+        background: #008CBA;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        z-index: 9999;
+        font-size: 16px;
+      }
+      #uploadBtn {
+        top: 50px;
+        background: #4CAF50;
+      }
+      #playPauseBtn {
+        top: 90px;
+        background: #FF9800;
+      }
+      #muteBtn {
+        top: 130px;
+        background: #f44336;
+      }
+      #unsupportedMsg {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        padding: 10px;
+        background: #f44336;
+        color: white;
+        border-radius: 5px;
+        font-size: 14px;
+        display: none;
+        z-index: 9999;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="shareBtn">Start Screen Share</button>
+    <button id="uploadBtn">Upload Video</button>
+    <button id="playPauseBtn">Play/Pause</button>
+    <button id="muteBtn">Mute/Unmute</button>
+    <div id="unsupportedMsg">Screen sharing not supported in this browser.</div><a-scene embedded arjs>
+  <!-- AR Camera -->
+  <a-camera position="0 0 0" look-controls></a-camera>
+
+  <!-- Simulated Projected Screen -->
+  <a-video id="projectedScreen"
+    position="0 0 -2"
+    rotation="0 0 0"
+    width="1.5"
+    height="0.8"
+    autoplay
+    loop
+    muted
+    playsinline
+    src="#fallbackVideo">
+  </a-video>
+
+  <a-assets>
+    <video id="fallbackVideo" autoplay loop muted playsinline src="https://www.w3schools.com/html/mov_bbb.mp4"></video>
+  </a-assets>
+</a-scene>
+
+<script>
+  const screenElement = document.getElementById('projectedScreen');
+  const shareBtn = document.getElementById('shareBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const unsupportedMsg = document.getElementById('unsupportedMsg');
+
+  let currentVideo = document.createElement('video');
+
+  shareBtn.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      unsupportedMsg.style.display = 'block';
+      return;
+    }
+
+    try {
+      const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      });
+
+      currentVideo.srcObject = mediaStream;
+      currentVideo.autoplay = true;
+      currentVideo.muted = true;
+      currentVideo.playsInline = true;
+      currentVideo.play();
+
+      currentVideo.onloadedmetadata = () => {
+        screenElement.setAttribute('src', currentVideo);
+      };
+
+      shareBtn.innerText = "Sharing...";
+      shareBtn.disabled = true;
+    } catch (err) {
+      console.error("Screen share failed:", err);
+    }
+  });
+
+  uploadBtn.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      currentVideo.src = URL.createObjectURL(file);
+      currentVideo.autoplay = true;
+      currentVideo.muted = true;
+      currentVideo.playsInline = true;
+      currentVideo.onloadedmetadata = () => {
+        screenElement.setAttribute('src', currentVideo);
+      };
+
+      currentVideo.play();
+    }
+  });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (currentVideo.paused) {
+      currentVideo.play();
+      playPauseBtn.innerText = "Pause";
+    } else {
+      currentVideo.pause();
+      playPauseBtn.innerText = "Play";
+    }
+  });
+
+  muteBtn.addEventListener('click', () => {
+    if (currentVideo.muted) {
+      currentVideo.muted = false;
+      muteBtn.innerText = "Mute";
+    } else {
+      currentVideo.muted = true;
+      muteBtn.innerText = "Unmute";
+    }
+  });
+</script>
+
+  </body>
+</html>
